@@ -5,12 +5,13 @@ import inspect
 import logging
 
 DEFERRED_WINDOWS: List[sublime.Window] = []
+SETTINGS: sublime.Settings
 
 logger = logging.getLogger(__name__)
 
 
 def add_deferred(window: Optional[sublime.Window]):
-    logger.info("Defer from: %s", inspect.stack()[1][3])
+    logger.debug("Defer from: %s", inspect.stack()[1][3])
     if not window:
         logger.warn("Windows is None, not adding")
         return
@@ -19,15 +20,15 @@ def add_deferred(window: Optional[sublime.Window]):
 
 
 def check_deferred():
-    logger.info("Apply deferred from: %s", inspect.stack()[1][3])
-    logger.info("Applying to: %s", DEFERRED_WINDOWS)
+    logger.debug("Apply deferred from: %s", inspect.stack()[1][3])
+    logger.debug("Applying to: %s", DEFERRED_WINDOWS)
 
     while len(DEFERRED_WINDOWS) > 0:
         internal_apply_sidebar_status(DEFERRED_WINDOWS.pop())
 
 
 def apply_sidebar_status(window: Optional[sublime.Window]):
-    logger.info("Apply from: %s", inspect.stack()[1][3])
+    logger.debug("Apply from: %s", inspect.stack()[1][3])
     add_deferred(window)
     check_deferred()
 
@@ -35,22 +36,30 @@ def apply_sidebar_status(window: Optional[sublime.Window]):
 def internal_apply_sidebar_status(window: sublime.Window):
     sidebar_visible = False
 
-    logger.info("Views: %s", window.views())
-    logger.info("Folders: %s", window.folders())
+    logger.debug("Views: %s", window.views())
+    logger.debug("Folders: %s", window.folders())
 
-    if not window.get_tabs_visible() and len(window.views()) > 1:
+    open_due_views = not window.get_tabs_visible() or SETTINGS.get(
+        "sidebar_open_when_tabs_visible", False
+    )
+
+    if open_due_views and len(window.views()) > 1:
         sidebar_visible = True
 
     if len(window.folders()) > 0:
         sidebar_visible = True
 
-    logger.info("Show sidebar?: %s", sidebar_visible)
+    logger.debug("Show sidebar?: %s", sidebar_visible)
 
     window.set_sidebar_visible(sidebar_visible, animate=True)
 
 
 class AutoSidebar(sublime_plugin.EventListener):
     def on_init(self, views):
+        global SETTINGS
+
+        SETTINGS = sublime.load_settings("Preferences.sublime-settings")
+
         for view in views:
             apply_sidebar_status(view.window())
 
