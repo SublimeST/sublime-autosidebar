@@ -87,17 +87,6 @@ class AutoSidebar(sublime_plugin.EventListener):
     def on_deactivated(self, view):
         apply_sidebar_status(view.window())
 
-    def on_window_command(self, window, command_name, args):
-        logger.info(f"Command: {command_name}")
-        apply_sidebar_status(window)
-
-    def on_post_window_command(self, window, command_name, args):
-        logger.info(f"Post Command: {command_name}")
-        apply_sidebar_status(window)
-
-    def on_new_window(self, window):
-        apply_sidebar_status(window)
-
     def on_new_project(self, window):
         apply_sidebar_status(window)
 

@@ -19,13 +19,1322 @@ import abc
 import collections.abc
 
 DIP = float
+"""
+Represents a device-independent pixel position.
+"""
+
 Vector = Tuple[DIP, DIP]
+"""
+Represents a X and Y coordinate.
+"""
+
 Point = int
+"""
+Represents the offset from the beginning of the editor buffer.
+"""
+
 Value = Union[bool, str, int, float, List["Value"], Dict[str, "Value"]]
-CommandArgs = Optional[Dict[str, Value]]
+"""
+A JSON-equivalent value.
+"""
+
+CommandArgs = Dict[str, Value] | None
+"""
+The arguments to a command may be `None` or a `dict` of `str` keys.
+"""
+
 Kind = Tuple[KindId, str, str]
+"""
+Metadata about the kind of a symbol, :class:`CompletionItem`, :class:`QuickPanelItem` or
+`ListInputItem`. Controls the color and letter shown in the "icon"
+presented to the left of the item.
+"""
+
 Event = dict
+"""
+Contains information about a user’s interaction with a menu, command palette selection, quick panel selection or HTML document. The follow methods are used to signal that an event dict is desired:
+
+- Commands may opt-in to receive an arg named event by implementing the method want_event(self) and returning True.
+- (4096) A call to show_quick_panel() may opt-in to receive a second arg to the on_done callback by specifying the flag QuickPanelFlags.WANT_EVENT.
+- (4096) ListInputHandler classes may opt-in to receive a second arg to the validate() and confirm() methods by by implementing the method want_event() and returning True.
+
+The dict may contain zero or more of the following keys, based on the user interaction:
+
+"x": float
+
+    The X mouse position when a user clicks on a menu, or in a minihtml document.
+
+"y": float
+
+    The Y mouse position when a user clicks on a menu, or in a minihtml document.
+
+"modifier_keys": dict (4096)
+
+    Can have zero or more of the following keys:
+
+    - "primary" - indicating Ctrl (Windows/Linux) or Cmd (Mac) was pressed
+
+    - "ctrl" - indicating Ctrl was pressed
+
+    - "alt" - indicating Alt was pressed
+
+    - "altgr" - indicating AltGr was pressed (Linux only)
+
+    - "shift" - indicating Shift was pressed
+
+    - "super" - indicating Win (Windows/Linux) or Cmd (Mac) was pressed
+
+Present when the user selects an item from a quick panel, selects an item from a ListInputHandler, or clicks a link in a minihtml document.
+"""
+
 CompletionValue = Union[str, Tuple[str, str], CompletionItem]
+"""
+Represents an available auto-completion item. completion values may be of several formats. The term trigger refers to the text matched against the user input, replacement is what is inserted into the view if the item is selected. An annotation is a unicode string hint displayed to the right-hand side of the trigger.
+
+- str:
+
+    A string that is both the trigger and the replacement:
+
+    ```
+    [
+        "method1()",
+        "method2()",
+    ]
+    ```
+
+- 2-element tuple or list:
+
+    A pair of strings - the trigger and the replacement:
+
+    ```
+    [
+        ["me1", "method1()"],
+        ["me2", "method2()"]
+    ]
+    ```
+
+    If a t is present in the trigger, all subsequent text is treated as an annotation:
+
+    ```
+    [
+        ["me1\tmethod", "method1()"],
+        ["me2\tmethod", "method2()"]
+    ]
+    ```
+
+    The replacement text may contain dollar-numeric fields such as a snippet does, e.g. $0, $1:
+
+    ```
+    [
+        ["fn", "def ${1:name}($2) { $0 }"],
+        ["for", "for ($1; $2; $3) { $0 }"]
+    ]
+    ```
+
+- :class:`CompletionItem` object
+
+    An object containing trigger, replacement, annotation, and kind metadata:
+
+    ```
+    [
+        sublime.CompletionItem(
+            "fn",
+            annotation="def",
+            completion="def ${1:name}($2) { $0 }",
+            completion_format=sublime.COMPLETION_FORMAT_SNIPPET,
+            kind=sublime.KIND_SNIPPET
+        ),
+        sublime.CompletionItem(
+            "for",
+            completion="for ($1; $2; $3) { $0 }",
+            completion_format=sublime.COMPLETION_FORMAT_SNIPPET,
+            kind=sublime.KIND_SNIPPET
+        ),
+    ]
+    ```
+"""
+
+class HoverZone(IntEnum):
+    """
+    (4132) (3.8)
+
+    A zone in an open text sheet where the mouse may hover.
+
+    See EventListener.on_hover and ViewEventListener.on_hover.
+
+    For backwards compatibility these values are also available outside this enumeration with a HOVER_ prefix.
+    """
+
+    TEXT = 1
+    """
+    The mouse is hovered over the text.
+    """
+
+    GUTTER = 2
+    """
+    The mouse is hovered over the gutter.
+    """
+
+    MARGIN = 3
+    """
+    The mouse is hovered in the white space to the right of a line.
+    """
+    ...
+
+HOVER_TEXT = 1
+"""
+[HoverZone.TEXT]
+The mouse is hovered over the text.
+"""
+
+HOVER_GUTTER = 2
+"""
+[HoverZone.GUTTER]
+The mouse is hovered over the gutter.
+"""
+
+HOVER_MARGIN = 3
+"""
+[HoverZone.MARGIN]
+The mouse is hovered in the white space to the right of a line.
+"""
+
+class NewFileFlags(IntFlag):
+    """
+    (4132) (3.8)
+
+    Flags for creating/opening files in various ways.
+
+    See Window.new_html_sheet, Window.new_file and Window.open_file.
+
+    For backwards compatibility these values are also available outside this enumeration (without a prefix).
+    """
+
+    NONE = 0
+
+    ENCODED_POSITION = 1
+    """
+    Indicates that the file name should be searched for a :row or :row:col suffix.
+    """
+
+    TRANSIENT = 4
+    """
+    Open the file as a preview only: it won’t have a tab assigned it until modified.
+    """
+
+    FORCE_GROUP = 8
+    """
+    Don’t select the file if it is open in a different group. Instead make a new clone of that file in the desired group.
+    """
+
+    SEMI_TRANSIENT = 16
+    """
+    (4096) If a sheet is newly created, it will be set to semi-transient. Semi-transient sheets generally replace other semi-transient sheets. This is used for the side-bar preview. Only valid with ADD_TO_SELECTION or REPLACE_MRU.
+    """
+
+    ADD_TO_SELECTION = 32
+    """
+    (4050) Add the file to the currently selected sheets in the group.
+    """
+
+    REPLACE_MRU = 64
+    """
+    (4096) Causes the sheet to replace the most-recently used sheet in the current sheet selection.
+    """
+
+    CLEAR_TO_RIGHT = 128
+    """
+    (4100) All currently selected sheets to the right of the most-recently used sheet will be unselected before opening the file. Only valid in combination with ADD_TO_SELECTION.
+    """
+
+    FORCE_CLONE = 256
+    """
+    Don’t select the file if it is open. Instead make a new clone of that file in the desired group.
+    """
+
+NONE = 0
+"""
+[NewFileFlags.NONE]
+"""
+
+ENCODED_POSITION = 1
+"""
+[NewFileFlags.ENCODED_POSITION]
+Indicates that the file name should be searched for a :row or :row:col suffix.
+"""
+
+TRANSIENT = 4
+"""
+[NewFileFlags.TRANSIENT]
+Open the file as a preview only: it won’t have a tab assigned it until modified.
+"""
+
+FORCE_GROUP = 8
+"""
+[NewFileFlags.FORCE_GROUP]
+Don’t select the file if it is open in a different group. Instead make a new clone of that file in the desired group.
+"""
+
+SEMI_TRANSIENT = 16
+"""
+[NewFileFlags.SEMI_TRANSIENT]
+(4096) If a sheet is newly created, it will be set to semi-transient. Semi-transient sheets generally replace other semi-transient sheets. This is used for the side-bar preview. Only valid with ADD_TO_SELECTION or REPLACE_MRU.
+"""
+
+ADD_TO_SELECTION = 32
+"""
+[NewFileFlags.ADD_TO_SELECTION]
+(4050) Add the file to the currently selected sheets in the group.
+"""
+
+REPLACE_MRU = 64
+"""
+[NewFileFlags.REPLACE_MRU]
+(4096) Causes the sheet to replace the most-recently used sheet in the current sheet selection.
+"""
+
+CLEAR_TO_RIGHT = 128
+"""
+[NewFileFlags.CLEAR_TO_RIGHT]
+(4100) All currently selected sheets to the right of the most-recently used sheet will be unselected before opening the file. Only valid in combination with ADD_TO_SELECTION.
+"""
+
+FORCE_CLONE = 256
+"""
+[NewFileFlags.FORCE_CLONE]
+Don’t select the file if it is open. Instead make a new clone of that file in the desired group.
+"""
+
+class FindFlags(IntFlag):
+    """
+    (4132) (3.8)
+
+    Flags for use when searching through a View.
+
+    See View.find and View.find_all.
+
+    For backwards compatibility these values are also available outside this enumeration (without a prefix).
+    """
+
+    NONE = 0
+
+    LITERAL = 1
+    """
+    Whether the find pattern should be matched literally or as a regex.
+    """
+
+    IGNORECASE = 2
+    """
+    Whether case should be considered when matching the find pattern.
+    """
+
+    WHOLEWORD = 4
+    """
+    (4149) Whether to only match whole words.
+    """
+
+    REVERSE = 8
+    """
+    (4149) Whether to search backwards.
+    """
+
+    WRAP = 16
+    """
+    (4149) Whether to wrap around once the end is reached.
+    """
+
+NONE = 0
+"""
+[FindFlags.NONE]
+"""
+
+LITERAL = 1
+"""
+[FindFlags.LITERAL]
+Whether the find pattern should be matched literally or as a regex.
+"""
+
+IGNORECASE = 2
+"""
+[FindFlags.IGNORECASE]
+Whether case should be considered when matching the find pattern.
+"""
+
+WHOLEWORD = 4
+"""
+[FindFlags.WHOLEWORD]
+(4149) Whether to only match whole words.
+"""
+
+REVERSE = 8
+"""
+[FindFlags.REVERSE]
+(4149) Whether to search backwards.
+"""
+
+WRAP = 16
+"""
+[FindFlags.WRAP]
+(4149) Whether to wrap around once the end is reached.
+"""
+
+class QuickPanelFlags(IntFlag):
+    """
+    (4132) (3.8)
+
+    Flags for use with a quick panel.
+
+    See Window.show_quick_panel.
+
+    For backwards compatibility these values are also available outside this enumeration (without a prefix).
+    """
+
+    NONE = 0
+
+    MONOSPACE_FONT = 1
+    """
+    Use a monospace font.
+    """
+
+    KEEP_OPEN_ON_FOCUS_LOST = 2
+    """
+    Keep the quick panel open if the window loses input focus.
+    """
+
+    WANT_EVENT = 4
+    """
+    (4096) Pass a second parameter to the on_done callback, a :class:`Event`.
+    """
+
+NONE = 0
+"""
+[QuickPanelFlags.NONE]
+"""
+
+MONOSPACE_FONT = 1
+"""
+[QuickPanelFlags.MONOSPACE_FONT]
+Use a monospace font.
+"""
+
+KEEP_OPEN_ON_FOCUS_LOST = 2
+"""
+[QuickPanelFlags.KEEP_OPEN_ON_FOCUS_LOST]
+Keep the quick panel open if the window loses input focus.
+"""
+
+WANT_EVENT = 4
+"""
+[QuickPanelFlags.WANT_EVENT]
+(4096) Pass a second parameter to the on_done callback, a :class:`Event`.
+"""
+
+class PopupFlags(IntFlag):
+    """
+    (4132) (3.8)
+
+    Flags for use with popups.
+
+    See View.show_popup.
+
+    For backwards compatibility these values are also available outside this enumeration (without a prefix).
+    """
+
+    NONE = 0
+
+    COOPERATE_WITH_AUTO_COMPLETE = 2
+    """
+    Causes the popup to display next to the auto complete menu.
+    """
+
+    HIDE_ON_MOUSE_MOVE = 4
+    """
+    Causes the popup to hide when the mouse is moved, clicked or scrolled.
+    """
+
+    HIDE_ON_MOUSE_MOVE_AWAY = 8
+    """
+    Causes the popup to hide when the mouse is moved (unless towards the popup), or when clicked or scrolled.
+    """
+
+    KEEP_ON_SELECTION_MODIFIED = 16
+    """
+    (4057) Prevent the popup from hiding when the selection is modified.
+    """
+
+    HIDE_ON_CHARACTER_EVENT = 32
+    """
+    (4057) Hide the popup when a character is typed.
+    """
+
+NONE = 0
+"""
+[PopupFlags.NONE]
+"""
+
+COOPERATE_WITH_AUTO_COMPLETE = 2
+"""
+[PopupFlags.COOPERATE_WITH_AUTO_COMPLETE]
+Causes the popup to display next to the auto complete menu.
+"""
+
+HIDE_ON_MOUSE_MOVE = 4
+"""
+[PopupFlags.HIDE_ON_MOUSE_MOVE]
+Causes the popup to hide when the mouse is moved, clicked or scrolled.
+"""
+
+HIDE_ON_MOUSE_MOVE_AWAY = 8
+"""
+[PopupFlags.HIDE_ON_MOUSE_MOVE_AWAY]
+Causes the popup to hide when the mouse is moved (unless towards the popup), or when clicked or scrolled.
+"""
+
+KEEP_ON_SELECTION_MODIFIED = 16
+"""
+[PopupFlags.KEEP_ON_SELECTION_MODIFIED]
+(4057) Prevent the popup from hiding when the selection is modified.
+"""
+
+HIDE_ON_CHARACTER_EVENT = 32
+"""
+[PopupFlags.HIDE_ON_CHARACTER_EVENT]
+(4057) Hide the popup when a character is typed.
+"""
+
+class RegionFlags(IntFlag):
+    """
+    (4132) (3.8)
+
+    Flags for use with added regions. See View.add_regions.
+
+    For backwards compatibility these values are also available outside this enumeration (without a prefix).
+    """
+
+    NONE = 0
+
+    DRAW_EMPTY = 1
+    """
+    Draw empty regions with a vertical bar. By default, they aren’t drawn at all.
+    """
+
+    HIDE_ON_MINIMAP = 2
+    """
+    Don’t show the regions on the minimap.
+    """
+
+    DRAW_EMPTY_AS_OVERWRITE = 4
+    """
+    Draw empty regions with a horizontal bar instead of a vertical one.
+    """
+
+    PERSISTENT = 16
+    """
+    Save the regions in the session.
+    """
+
+    DRAW_NO_FILL = 32
+    """
+    Disable filling the regions, leaving only the outline.
+    """
+
+    HIDDEN = 128
+    """
+    Don’t draw the regions.
+    """
+
+    DRAW_NO_OUTLINE = 256
+    """
+    Disable drawing the outline of the regions.
+    """
+
+    DRAW_SOLID_UNDERLINE = 512
+    """
+    Draw a solid underline below the regions.
+    """
+
+    DRAW_STIPPLED_UNDERLINE = 1024
+    """
+    Draw a stippled underline below the regions.
+    """
+
+    DRAW_SQUIGGLY_UNDERLINE = 2048
+    """
+    Draw a squiggly underline below the regions.
+    """
+
+    NO_UNDO = 8192
+
+NONE = 0
+"""
+[RegionFlags.0]
+"""
+
+DRAW_EMPTY = 1
+"""
+[RegionFlags.=]
+Draw empty regions with a vertical bar. By default, they aren’t drawn at all.
+"""
+
+HIDE_ON_MINIMAP = 2
+"""
+[RegionFlags.HIDE_ON_MINIMAP]
+Don’t show the regions on the minimap.
+"""
+
+DRAW_EMPTY_AS_OVERWRITE = 4
+"""
+[RegionFlags.DRAW_EMPTY_AS_OVERWRITE]
+Draw empty regions with a horizontal bar instead of a vertical one.
+"""
+
+PERSISTENT = 16
+"""
+[RegionFlags.=]
+Save the regions in the session.
+"""
+
+DRAW_NO_FILL = 32
+"""
+[RegionFlags.DRAW_NO_FILL]
+Disable filling the regions, leaving only the outline.
+"""
+
+HIDDEN = 128
+"""
+[RegionFlags.128]
+Don’t draw the regions.
+"""
+
+DRAW_NO_OUTLINE = 256
+"""
+[RegionFlags.DRAW_NO_OUTLINE]
+Disable drawing the outline of the regions.
+"""
+
+DRAW_SOLID_UNDERLINE = 512
+"""
+[RegionFlags.DRAW_SOLID_UNDERLINE]
+Draw a solid underline below the regions.
+"""
+
+DRAW_STIPPLED_UNDERLINE = 1024
+"""
+[RegionFlags.DRAW_STIPPLED_UNDERLINE]
+Draw a stippled underline below the regions.
+"""
+
+DRAW_SQUIGGLY_UNDERLINE = 2048
+"""
+[RegionFlags.DRAW_SQUIGGLY_UNDERLINE]
+Draw a squiggly underline below the regions.
+"""
+
+NO_UNDO = 8192
+"""
+[RegionFlags.8192]
+"""
+
+class QueryOperator(IntEnum):
+    """
+    (4132) (3.8)
+
+    Enumeration of operators able to be used when querying contexts.
+
+    See EventListener.on_query_context and ViewEventListener.on_query_context.
+
+    For backwards compatibility these values are also available outside this enumeration with a OP_ prefix.
+    """
+
+    EQUAL = 0
+
+    NOT_EQUAL = 1
+
+    REGEX_MATCH = 2
+
+    NOT_REGEX_MATCH = 3
+
+    REGEX_CONTAINS = 4
+
+    NOT_REGEX_CONTAINS = 5
+
+OP_EQUAL = 0
+"""
+[QueryOperator.EQUAL]
+"""
+
+OP_NOT_EQUAL = 1
+"""
+[QueryOperator.NOT_EQUAL]
+"""
+
+OP_REGEX_MATCH = 2
+"""
+[QueryOperator.REGEX_MATCH]
+"""
+
+OP_NOT_REGEX_MATCH = 3
+"""
+[QueryOperator.NOT_REGEX_MATCH]
+"""
+
+OP_REGEX_CONTAINS = 4
+"""
+[QueryOperator.REGEX_CONTAINS]
+"""
+
+OP_NOT_REGEX_CONTAINS = 5
+"""
+[QueryOperator.NOT_REGEX_CONTAINS]
+"""
+
+class PointClassification(IntFlag):
+    """
+    (4132) (3.8)
+
+    Flags that identify characteristics about a Point in a text sheet. See View.classify.
+
+    For backwards compatibility these values are also available outside this enumeration with a CLASS_ prefix.
+    """
+
+    NONE = 0
+
+    WORD_START = 1
+    """
+    The point is the start of a word.
+    """
+
+    WORD_END = 2
+    """
+    The point is the end of a word.
+    """
+
+    PUNCTUATION_START = 4
+    """
+    The point is the start of a sequence of punctuation characters.
+    """
+
+    PUNCTUATION_END = 8
+    """
+    The point is the end of a sequence of punctuation characters.
+    """
+
+    SUB_WORD_START = 16
+    """
+    The point is the start of a sub-word.
+    """
+
+    SUB_WORD_END = 32
+    """
+    The point is the end of a sub-word.
+    """
+
+    LINE_START = 64
+    """
+    The point is the start of a line.
+    """
+
+    LINE_END = 128
+    """
+    The point is the end of a line.
+    """
+
+    EMPTY_LINE = 256
+    """
+    The point is an empty line.
+    """
+
+CLASS_NONE = 0
+"""
+[PointClassification.NONE]
+"""
+
+CLASS_WORD_START = 1
+"""
+[PointClassification.WORD_START]
+The point is the start of a word.
+"""
+
+CLASS_WORD_END = 2
+"""
+[PointClassification.WORD_END]
+The point is the end of a word.
+"""
+
+CLASS_PUNCTUATION_START = 4
+"""
+[PointClassification.PUNCTUATION_START]
+The point is the start of a sequence of punctuation characters.
+"""
+
+CLASS_PUNCTUATION_END = 8
+"""
+[PointClassification.PUNCTUATION_END]
+The point is the end of a sequence of punctuation characters.
+"""
+
+CLASS_SUB_WORD_START = 16
+"""
+[PointClassification.SUB_WORD_START]
+The point is the start of a sub-word.
+"""
+
+CLASS_SUB_WORD_END = 32
+"""
+[PointClassification.SUB_WORD_END]
+The point is the end of a sub-word.
+"""
+
+CLASS_LINE_START = 64
+"""
+[PointClassification.LINE_START]
+The point is the start of a line.
+"""
+
+CLASS_LINE_END = 128
+"""
+[PointClassification.LINE_END]
+The point is the end of a line.
+"""
+
+CLASS_EMPTY_LINE = 256
+"""
+[PointClassification.EMPTY_LINE]
+The point is an empty line.
+"""
+
+class AutoCompleteFlags(IntFlag):
+    """
+    (4132) (3.8)
+
+    Flags controlling how asynchronous completions function. See CompletionList.
+
+    For backwards compatibility these values are also available outside this enumeration (without a prefix).
+    """
+
+    NONE = 0
+
+    INHIBIT_WORD_COMPLETIONS = 8
+    """
+    Prevent Sublime Text from showing completions based on the contents of the view.
+    """
+
+    INHIBIT_EXPLICIT_COMPLETIONS = 16
+    """
+    Prevent Sublime Text from showing completions based on .sublime-completions files.
+    """
+
+    DYNAMIC_COMPLETIONS = 32
+    """
+    (4057) If completions should be re-queried as the user types.
+    """
+
+    INHIBIT_REORDER = 128
+    """
+    (4074) Prevent Sublime Text from changing the completion order.
+    """
+
+NONE = 0
+"""
+[AutoCompleteFlags.NONE]
+"""
+
+INHIBIT_WORD_COMPLETIONS = 8
+"""
+[AutoCompleteFlags.INHIBIT_WORD_COMPLETIONS]
+Prevent Sublime Text from showing completions based on the contents of the view.
+"""
+
+INHIBIT_EXPLICIT_COMPLETIONS = 16
+"""
+[AutoCompleteFlags.INHIBIT_EXPLICIT_COMPLETIONS]
+Prevent Sublime Text from showing completions based on .sublime-completions files.
+"""
+
+DYNAMIC_COMPLETIONS = 32
+"""
+[AutoCompleteFlags.DYNAMIC_COMPLETIONS]
+(4057) If completions should be re-queried as the user types.
+"""
+
+INHIBIT_REORDER = 128
+"""
+[AutoCompleteFlags.INHIBIT_REORDER]
+(4074) Prevent Sublime Text from changing the completion order.
+"""
+
+class DialogResult(IntEnum):
+    """
+    (4132) (3.8)
+
+    The result from a yes / no / cancel dialog. See yes_no_cancel_dialog.
+
+    For backwards compatibility these values are also available outside this enumeration with a DIALOG_ prefix.
+    """
+
+    CANCEL = 0
+
+    YES = 1
+
+    NO = 2
+
+DIALOG_CANCEL = 0
+"""
+DialofResult.CANCEL
+"""
+
+DIALOG_YES = 1
+"""
+DialofResult.YES
+"""
+
+DIALOG_NO = 2
+"""
+DialofResult.NO
+"""
+
+class PhantomLayout(IntEnum):
+    """
+    (4132) (3.8)
+
+    How a Phantom should be positioned. See :class:`PhantomSet`.
+
+    For backwards compatibility these values are also available outside this enumeration with a LAYOUT_ prefix.
+    """
+
+    INLINE = 0
+    """
+    The phantom is positioned inline with the text at the beginning of its Region.
+    """
+
+    BELOW = 1
+    """
+    The phantom is positioned below the line, left-aligned with the beginning of its Region.
+    """
+
+    BLOCK = 2
+    """
+    The phantom is positioned below the line, left-aligned with the beginning of the line.
+    """
+
+LAYOUT_INLINE = 0
+"""
+[PhantomLayout.INLINE]
+The phantom is positioned inline with the text at the beginning of its Region.
+"""
+
+LAYOUT_BELOW = 1
+"""
+[PhantomLayout.BELOW]
+The phantom is positioned below the line, left-aligned with the beginning of its Region.
+"""
+
+LAYOUT_BLOCK = 2
+"""
+[PhantomLayout.BLOCK]
+The phantom is positioned below the line, left-aligned with the beginning of the line.
+"""
+
+class KindId(IntEnum):
+    """
+    (4132) (3.8)
+
+    For backwards compatibility these values are also available outside this enumeration with a KIND_ID_ prefix.
+    """
+
+    AMBIGUOUS = 0
+
+    KEYWORD = 1
+
+    TYPE = 2
+
+    FUNCTION = 3
+
+    NAMESPACE = 4
+
+    NAVIGATION = 5
+
+    MARKUP = 6
+
+    VARIABLE = 7
+
+    SNIPPET = 8
+
+    COLOR_REDISH = 9
+
+    COLOR_ORANGISH = 10
+
+    COLOR_YELLOWISH = 11
+
+    COLOR_GREENISH = 12
+
+    COLOR_CYANISH = 13
+
+    COLOR_BLUISH = 14
+
+    COLOR_PURPLISH = 15
+
+    COLOR_PINKISH = 16
+
+    COLOR_DARK = 17
+
+    COLOR_LIGHT = 18
+
+KIND_ID_AMBIGUOUS = 0
+"""
+[KindId.AMBIGUOUS]
+"""
+
+KIND_ID_KEYWORD = 1
+"""
+[KindId.KEYWORD]
+"""
+
+KIND_ID_TYPE = 2
+"""
+[KindId.TYPE]
+"""
+
+KIND_ID_FUNCTION = 3
+"""
+[KindId.FUNCTION]
+"""
+
+KIND_ID_NAMESPACE = 4
+"""
+[KindId.NAMESPACE]
+"""
+
+KIND_ID_NAVIGATION = 5
+"""
+[KindId.NAVIGATION]
+"""
+
+KIND_ID_MARKUP = 6
+"""
+[KindId.MARKUP]
+"""
+
+KIND_ID_VARIABLE = 7
+"""
+[KindId.VARIABLE]
+"""
+
+KIND_ID_SNIPPET = 8
+"""
+[KindId.SNIPPET]
+"""
+
+KIND_ID_COLOR_REDISH = 9
+"""
+[KindId.COLOR_REDISH]
+"""
+
+KIND_ID_COLOR_ORANGISH = 10
+"""
+[KindId.COLOR_ORANGISH]
+"""
+
+KIND_ID_COLOR_YELLOWISH = 11
+"""
+[KindId.COLOR_YELLOWISH]
+"""
+
+KIND_ID_COLOR_GREENISH = 12
+"""
+[KindId.COLOR_GREENISH]
+"""
+
+KIND_ID_COLOR_CYANISH = 13
+"""
+[KindId.COLOR_CYANISH]
+"""
+
+KIND_ID_COLOR_BLUISH = 14
+"""
+[KindId.COLOR_BLUISH]
+"""
+
+KIND_ID_COLOR_PURPLISH = 15
+"""
+[KindId.COLOR_PURPLISH]
+"""
+
+KIND_ID_COLOR_PINKISH = 16
+"""
+[KindId.COLOR_PINKISH]
+"""
+
+KIND_ID_COLOR_DARK = 17
+"""
+[KindId.COLOR_DARK]
+"""
+
+KIND_ID_COLOR_LIGHT = 18
+"""
+[KindId.COLOR_LIGHT]
+"""
+
+KIND_AMBIGUOUS = (KindId.AMBIGUOUS, "", "")
+"""
+(4052)
+"""
+
+KIND_KEYWORD = (KindId.KEYWORD, "", "")
+"""
+(4052)
+"""
+
+KIND_TYPE = (KindId.TYPE, "", "")
+"""
+(4052)
+"""
+
+KIND_FUNCTION = (KindId.FUNCTION, "", "")
+"""
+(4052)
+"""
+
+KIND_NAMESPACE = (KindId.NAMESPACE, "", "")
+"""
+(4052)
+"""
+
+KIND_NAVIGATION = (KindId.NAVIGATION, "", "")
+"""
+(4052)
+"""
+
+KIND_MARKUP = (KindId.MARKUP, "", "")
+"""
+(4052)
+"""
+
+KIND_VARIABLE = (KindId.VARIABLE, "", "")
+"""
+(4052)
+"""
+
+KIND_SNIPPET = (KindId.SNIPPET, "s", "Snippet")
+"""
+(4052)
+"""
+
+class SymbolSource(IntEnum):
+    """
+    (4132) (3.8)
+
+    See :func:`Window.symbol_locations`.
+
+    For backwards compatibility these values are also available outside this enumeration with a SYMBOL_SOURCE_ prefix.
+    """
+
+    ANY = 0
+    """
+    (4085) Use any source - both the index and open files.
+    """
+
+    INDEX = 1
+    """
+    (4085) Use the index created when scanning through files in a project folder.
+    """
+
+    OPEN_FILES = 2
+    """
+    (4085) Use the open files, unsaved or otherwise.
+    """
+
+SYMBOL_SOURCE_ANY = 0
+"""
+[SymbolSource.ANY]
+(4085) Use any source - both the index and open files.
+"""
+
+SYMBOL_SOURCE_INDEX = 1
+"""
+[SymbolSource.INDEX]
+(4085) Use the index created when scanning through files in a project folder.
+"""
+
+SYMBOL_SOURCE_OPEN_FILES = 2
+"""
+[SymbolSource.OPEN_FILES]
+(4085) Use the open files, unsaved or otherwise.
+"""
+
+class SymbolType(IntEnum):
+    """
+    (4132) (3.8)
+
+    See :func:`Window.symbol_locations` and :func:`View.indexed_symbol_regions`.
+
+    For backwards compatibility these values are also available outside this enumeration with a SYMBOL_TYPE_ prefix.
+    """
+
+    ANY = 0
+    """
+    (4085) Any symbol type - both definitions and references.
+    """
+
+    DEFINITION = 1
+    """
+    (4085) Only definitions.
+    """
+
+    REFERENCE = 2
+    """
+    (4085) Only references.
+    """
+
+SYMBOL_TYPE_ANY = 0
+"""
+[SymbolType.ANY]
+(4085) Any symbol type - both definitions and references.
+"""
+
+SYMBOL_TYPE_DEFINITION = 1
+"""
+[SymbolType.DEFINITION]
+(4085) Only definitions.
+"""
+
+SYMBOL_TYPE_REFERENCE = 2
+"""
+[SymbolType.REFERENCE]
+(4085) Only references.
+"""
+
+class CompletionFormat(IntEnum):
+    """
+    (4132) (3.8)
+
+    The format completion text can be in. See :class:`CompletionItem`.
+
+    For backwards compatibility these values are also available outside this enumeration with a COMPLETION_FORMAT_ prefix.
+    """
+
+    TEXT = 0
+    """
+    (4050) Plain text, upon completing the text is inserted verbatim.
+    """
+
+    SNIPPET = 1
+    """
+    (4050) A snippet, with $ variables. See also CompletionItem.snippet_completion.
+    """
+
+    COMMAND = 2
+    """
+    (4050) A command string, in the format returned by format_command(). See also :func:`CompletionItem.command_completion`().
+    """
+
+COMPLETION_FORMAT_TEXT = 0
+"""
+[CompletionFormat.TEXT]
+(4050) Plain text, upon completing the text is inserted verbatim.
+"""
+
+COMPLETION_FORMAT_SNIPPET = 1
+"""
+[CompletionFormat.SNIPPET]
+(4050) A snippet, with $ variables. See also CompletionItem.snippet_completion.
+"""
+
+COMPLETION_FORMAT_COMMAND = 2
+"""
+[CompletionFormat.COMMAND]
+(4050) A command string, in the format returned by format_command(). See also CompletionItem.command_completion().
+"""
+
+def version() -> str:
+    """
+    Returns:
+
+        The version number.
+    """
+
+def platform() -> Literal["osx", "linux", "windows"]:
+    """
+    Returns:
+
+        The platform which the plugin is being run on.
+    """
+
+def arch() -> Literal["x32", "x64", "arm64"]:
+    """
+    Returns:
+
+        The CPU architecture.
+    """
+
+def channel() -> Literal["dev", "stable"]:
+    """
+    Returns:
+
+        The release channel of this build of Sublime Text.
+    """
+
+def executable_path() -> str:
+    """
+    (4081) This may be called at import time.
+
+    Returns:
+
+        The path to the main Sublime Text executable.
+    """
+
+def executable_hash() -> tuple[str, str, str]:
+    """
+    (4081) This may be called at import time.
+
+    Returns:
+
+        A tuple uniquely identifying the installation of Sublime Text.
+    """
+
+def packages_path() -> str:
+    """
+    (4081) This may be called at import time.
+
+    Returns:
+
+        The path to the “Packages” folder.
+    """
+
+def installed_packages_path() -> str:
+    """
+    (4081) This may be called at import time.
+
+    Returns:
+
+        The path to the “Installed Packages” folder.
+    """
+
+def cache_path() -> str:
+    """
+    (4081) This may be called at import time.
+
+    Returns:
+
+        The path where Sublime Text stores cache files.
+    """
+
+def status_message(msg: str):
+    """
+    Show a message in the status bar.
+    """
+
+def error_message(msg: str):
+    """
+    Display an error dialog.
+    """
+
+def message_dialog(msg: str):
+    """
+    Display a message dialog.
+    """
+
+# --------------------
 
 class Settings:
     """A dict like object that a settings hierarchy."""
@@ -1379,61 +2688,8 @@ class Selection(Sequence[Region], metaclass=abc.ABCMeta):
         "Whether the provided region is contained within the selection."
         ...
 
-class PointClassification(IntFlag):
-    """
-    Flags that identify characteristics about a Point in a text sheet. See View.classify.
-
-    For backwards compatibility these values are also available outside this enumeration with a CLASS_ prefix.
-    """
-
-    NONE = 0
-    WORD_START = 1
-    WORD_END = 2
-    PUNCTUATION_START = 4
-    PUNCTUATION_END = 8
-    SUB_WORD_START = 16
-    SUB_WORD_END = 32
-    LINE_START = 64
-    LINE_END = 128
-    EMPTY_LINE = 256
-
 CLASS_NONE = PointClassification.NONE
 CLASS_EMPTY_LINE = PointClassification.EMPTY_LINE
-
-class QueryOperator(IntEnum):
-    """
-    Enumeration of operators able to be used when querying contexts.
-
-    See EventListener.on_query_context and ViewEventListener.on_query_context.
-
-    For backwards compatibility these values are also available outside this enumeration with a OP_ prefix.
-
-    EQUAL = 0
-
-    NOT_EQUAL = 1
-
-    REGEX_MATCH = 2
-
-    NOT_REGEX_MATCH = 3
-
-    REGEX_CONTAINS = 4
-
-    NOT_REGEX_CONTAINS = 5
-    """
-
-    EQUAL = ...
-    NOT_EQUAL = ...
-    REGEX_MATCH = ...
-    NOT_REGEX_MATCH = ...
-    REGEX_CONTAINS = ...
-    NOT_REGEX_CONTAINS = ...
-
-OP_EQUAL = ...
-OP_NOT_EQUAL = ...
-OP_REGEX_MATCH = ...
-OP_NOT_REGEX_MATCH = ...
-OP_REGEX_CONTAINS = ...
-OP_NOT_REGEX_CONTAINS = ...
 
 def set_timeout(callback, delay) -> None:
     """Runs the callback in the main thread after the given delay (in milliseconds). Callbacks with an equal delay will be run in the order they were added."""
@@ -1441,14 +2697,6 @@ def set_timeout(callback, delay) -> None:
 
 def set_timeout_async(callback, delay) -> None:
     """Runs the callback on an alternate thread after the given delay (in milliseconds)."""
-    ...
-
-def error_message(string) -> None:
-    """Displays an error dialog to the user."""
-    ...
-
-def message_dialog(string) -> None:
-    """Displays a message dialog to the user."""
     ...
 
 def ok_cancel_dialog(string, ok_title=...) -> bool:
@@ -1516,9 +2764,6 @@ def load_settings(base_name) -> Settings: ...
 def save_settings(base_name) -> None: ...
 def windows() -> List[Window]: ...
 def active_window() -> Window: ...
-def packages_path() -> str: ...
-def installed_packages_path() -> str: ...
-def cache_path() -> str: ...
 def get_clipboard(size_limit=...) -> str: ...
 def get_clipboard_async(callback, size_limit=...) -> None: ...
 def set_clipboard(string) -> None: ...
@@ -1565,124 +2810,10 @@ def log_fps(flag) -> None:
     """
     ...
 
-def version() -> str:
-    """
-    Returns the version number
-    """
-    ...
-
-def platform() -> str:
-    """
-    Returns the platform, which may be "osx", "linux" or "windows"
-    """
-    ...
-
-def arch() -> str:
-    """
-    Returns the CPU architecture, which may be "x32", "x64" or "arm64"
-    """
-    ...
-
-def channel() -> str:
-    """
-    Returns the release channel this build of Sublime Text is from: "dev" or "stable"
-    """
-    ...
-
 class Sheet: ...
 class CompletionItem: ...
-
-class NewFileFlags(IntFlag):
-    """
-    Flags for creating/opening files in various ways.
-
-    See Window.new_html_sheet, Window.new_file and Window.open_file.
-
-    For backwards compatibility these values are also available outside this enumeration (without a prefix).
-    """
-
-    NONE = 0
-    ENCODED_POSITION = 1
-    TRANSIENT = 4
-    FORCE_GROUP = 8
-    SEMI_TRANSIENT = 16
-    ADD_TO_SELECTION = 32
-    REPLACE_MRU = 64
-    CLEAR_TO_RIGHT = 128
-    FORCE_CLONE = 256
-
 class SymbolLocation: ...
 class SymbolFlags: ...
-
-class SymbolSource(IntEnum):
-    """
-    See Window.symbol_locations.
-
-    For backwards compatibility these values are also available outside this enumeration with a SYMBOL_SOURCE_ prefix.
-    """
-
-    ANY = ...
-    INDEX = ...
-    OPEN_FILES = ...
-
-class QuickPanelFlags(IntFlag):
-    """
-    Flags for use with a quick panel.
-    See Window.show_quick_panel.
-
-    For backwards compatibility these values are also available outside this enumeration (without a prefix).
-    """
-
-    NONE = ...
-    MONOSPACE_FONT = ...
-    KEEP_OPEN_ON_FOCUS_LOST = ...
-    WANT_EVENT = ...
-
-class SymbolType(IntEnum):
-    """
-    See Window.symbol_locations and View.indexed_symbol_regions.
-
-    For backwards compatibility these values are also available outside this enumeration with a SYMBOL_TYPE_ prefix.
-    """
-
-    ANY = ...
-    DEFINITION = ...
-    REFERENCE = ...
-
-class KindId(IntEnum):
-    """
-    For backwards compatibility these values are also available outside this enumeration with a KIND_ID_ prefix.
-    """
-
-    AMBIGUOUS = ...
-    KEYWORD = ...
-    TYPE = ...
-    FUNCTION = ...
-    NAMESPACE = ...
-    NAVIGATION = ...
-    MARKUP = ...
-    VARIABLE = ...
-    SNIPPET = ...
-    COLOR_REDISH = ...
-    COLOR_ORANGISH = ...
-    COLOR_YELLOWISH = ...
-    COLOR_GREENISH = ...
-    COLOR_CYANISH = ...
-    COLOR_BLUISH = ...
-    COLOR_PURPLISH = ...
-    COLOR_PINKISH = ...
-    COLOR_DARK = ...
-    COLOR_LIGHT = ...
-
-KIND_AMBIGUOUS = ...
-KIND_KEYWORD = ...
-KIND_TYPE = ...
-KIND_FUNCTION = ...
-KIND_NAMESPACE = ...
-KIND_NAVIGATION = ...
-KIND_MARKUP = ...
-KIND_VARIABLE = ...
-KIND_SNIPPET = ...
 
 class Edit:
     """
@@ -1691,19 +2822,6 @@ class Edit:
     """
 
     ...
-
-class FindFlags(IntFlag):
-    """
-    Flags for use when searching through a View.
-
-    See View.find and View.find_all.
-
-    For backwards compatibility these values are also available outside this enumeration (without a prefix).
-    """
-
-    NONE = ...
-    IGNORECASE = ...
-    LITERAL = ...
 
 class ContextStackFrame:
     """
@@ -1714,26 +2832,6 @@ class ContextStackFrame:
     source_file: str
     source_location: Tuple[int, int]
     ...
-
-class RegionFlags(IntFlag):
-    """
-    Flags for use with added regions. See View.add_regions.
-
-    For backwards compatibility these values are also available outside this enumeration (without a prefix).
-    """
-
-    NONE = ...
-    DRAW_EMPTY = ...
-    HIDE_ON_MINIMAP = ...
-    DRAW_EMPTY_AS_OVERWRITE = ...
-    PERSISTENT = ...
-    DRAW_NO_FILL = ...
-    HIDDEN = ...
-    DRAW_NO_OUTLINE = ...
-    DRAW_SOLID_UNDERLINE = ...
-    DRAW_STIPPLED_UNDERLINE = ...
-    DRAW_SQUIGGLY_UNDERLINE = ...
-    NO_UNDO = ...
 
 class SymbolRegion:
     """
@@ -1747,25 +2845,7 @@ class SymbolRegion:
     kind: Kind
     ...
 
-class PopupFlags(IntFlag):
-    """
-    Flags for use with popups.
-
-    See View.show_popup.
-
-    For backwards compatibility these values are also available outside this enumeration (without a prefix).
-    """
-
-    NONE = ...
-    COOPERATE_WITH_AUTO_COMPLETE = ...
-    HIDE_ON_MOUSE_MOVE = ...
-    HIDE_ON_MOUSE_MOVE_AWAY = ...
-    KEEP_ON_SELECTION_MODIFIED = ...
-    HIDE_ON_CHARACTER_EVENT = ...
-
 class Html: ...
 class ListInputItem: ...
-class HoverZone: ...
-class AutoCompleteFlags: ...
 class CompletionList: ...
 class TextChange: ...
