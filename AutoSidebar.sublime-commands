@@ -1,0 +1,8 @@
+[
+  { "caption": "AutoSidebar: Enable in this window",
+    "command": "auto_sidebar_enable_in_window"
+  },
+  { "caption": "AutoSidebar: Disable in this window",
+    "command": "auto_sidebar_disable_in_window"
+  }
+]

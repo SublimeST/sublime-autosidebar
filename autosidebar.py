@@ -1,13 +1,17 @@
-from typing import List, Optional
-import sublime
-import sublime_plugin
 import inspect
 import logging
+from typing import List, Optional
+
+import sublime
+import sublime_plugin
 
 DEFERRED_WINDOWS: List[sublime.Window] = []
 SETTINGS: sublime.Settings
 
 logger = logging.getLogger(__name__)
+
+WINDOW_SETTING = "sidebar_auto_enabled"
+PROJECT_SETTING = "sidebar_auto_enabled"
 
 
 def add_deferred(window: Optional[sublime.Window]):
@@ -38,6 +42,14 @@ def internal_apply_sidebar_status(window: sublime.Window):
 
     logger.debug("Views: %s", window.views())
     logger.debug("Folders: %s", window.folders())
+
+    if window.settings() and not window.settings().get(WINDOW_SETTING, False):
+        logger.debug("Auto sidebar disabled in window")
+        return
+
+    if window.project_data() and not window.project_data().get(PROJECT_SETTING, False):
+        logger.debug("Auto sidebar disabled in project")
+        return
 
     open_due_views = not window.get_tabs_visible() or SETTINGS.get(
         "sidebar_open_when_tabs_visible", False
@@ -107,3 +119,14 @@ class AutoSidebar(sublime_plugin.EventListener):
 
     def on_pre_close_project(self, window):
         add_deferred(window)
+
+
+class AutoSidebarEnableInWindow(sublime_plugin.WindowCommand):
+    def run(self):
+        self.window.settings().set(WINDOW_SETTING, True)
+        apply_sidebar_status(self.window)
+
+
+class AutoSidebarDisableInWindow(sublime_plugin.WindowCommand):
+    def run(self):
+        self.window.settings().set(WINDOW_SETTING, False)
