@@ -10,8 +10,8 @@ SETTINGS: sublime.Settings
 
 logger = logging.getLogger(__name__)
 
-WINDOW_SETTING = "sidebar_auto_enabled"
-PROJECT_SETTING = "sidebar_auto_enabled"
+ENABLED_IN_WINDOW_SETTING = "sidebar_auto_enabled"
+ENABLED_IN_PROJECT_SETTING = "sidebar_auto_enabled"
 
 
 def add_deferred(window: Optional[sublime.Window]):
@@ -43,11 +43,11 @@ def internal_apply_sidebar_status(window: sublime.Window):
     logger.debug("Views: %s", window.views())
     logger.debug("Folders: %s", window.folders())
 
-    if window.settings() and not window.settings().get(WINDOW_SETTING, False):
+    if window.settings() and not window.settings().get(ENABLED_IN_WINDOW_SETTING, True):
         logger.debug("Auto sidebar disabled in window")
         return
 
-    if window.project_data() and not window.project_data().get(PROJECT_SETTING, False):
+    if window.project_data() and not window.project_data().get(ENABLED_IN_PROJECT_SETTING, True):
         logger.debug("Auto sidebar disabled in project")
         return
 
@@ -123,10 +123,11 @@ class AutoSidebar(sublime_plugin.EventListener):
 
 class AutoSidebarEnableInWindow(sublime_plugin.WindowCommand):
     def run(self):
-        self.window.settings().set(WINDOW_SETTING, True)
+        self.window.settings().set(ENABLED_IN_WINDOW_SETTING, True)
         apply_sidebar_status(self.window)
 
 
 class AutoSidebarDisableInWindow(sublime_plugin.WindowCommand):
     def run(self):
-        self.window.settings().set(WINDOW_SETTING, False)
+        self.window.settings().set(ENABLED_IN_WINDOW_SETTING, False)
+
